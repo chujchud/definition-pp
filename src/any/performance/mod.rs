@@ -1,8 +1,12 @@
 use rosu_map::section::general::GameMode;
 
 use crate::{
-    Difficulty, GameMods, catch::CatchPerformance, mania::ManiaPerformance, osu::OsuPerformance,
-    taiko::TaikoPerformance,
+    Difficulty, GameMods,
+    any::HitResultGenerator,
+    catch::{Catch, CatchPerformance},
+    mania::{Mania, ManiaPerformance},
+    osu::{Osu, OsuPerformance},
+    taiko::{Taiko, TaikoPerformance},
 };
 
 use self::into::IntoPerformance;
@@ -10,6 +14,7 @@ use self::into::IntoPerformance;
 use super::{attributes::PerformanceAttributes, score_state::ScoreState};
 
 pub mod gradual;
+pub mod inspectable;
 pub mod into;
 
 /// Performance calculator on maps of any mode.
@@ -295,15 +300,41 @@ impl<'map> Performance<'map> {
         }
     }
 
-    /// Specify how hitresults should be generated.
-    ///
-    /// Defauls to [`HitResultPriority::BestCase`].
+    /// Specify the priority of hitresults.
     pub fn hitresult_priority(self, priority: HitResultPriority) -> Self {
         match self {
             Self::Osu(o) => Self::Osu(o.hitresult_priority(priority)),
             Self::Taiko(t) => Self::Taiko(t.hitresult_priority(priority)),
             Self::Catch(_) => self,
             Self::Mania(m) => Self::Mania(m.hitresult_priority(priority)),
+        }
+    }
+
+    /// Specify how hitresults should be generated.
+    ///
+    /// # Example
+    /// ```rust
+    /// use rosu_pp::any::hitresult_generator::{Closest, Composable, Fast};
+    /// # use rosu_pp::Performance;
+    ///
+    /// # let map = rosu_pp::catch::CatchDifficultyAttributes::default();
+    /// let attrs = Performance::new(map)
+    ///     // Use `Closest` for osu!, taiko, and catch, and `Fast` for mania
+    ///     .hitresult_generator::<Composable<Closest, Closest, Closest, Fast>>()
+    ///     .calculate();
+    /// ```
+    pub fn hitresult_generator<H>(self) -> Self
+    where
+        H: HitResultGenerator<Osu>
+            + HitResultGenerator<Taiko>
+            + HitResultGenerator<Catch>
+            + HitResultGenerator<Mania>,
+    {
+        match self {
+            Performance::Osu(o) => Self::Osu(o.hitresult_generator::<H>()),
+            Performance::Taiko(t) => Self::Taiko(t.hitresult_generator::<H>()),
+            Performance::Catch(c) => Self::Catch(c.hitresult_generator::<H>()),
+            Performance::Mania(m) => Self::Mania(m.hitresult_generator::<H>()),
         }
     }
 
@@ -440,8 +471,6 @@ pub enum HitResultPriority {
     BestCase,
     /// Prioritize bad hitresults over good ones
     WorstCase,
-    /// Prioritize fast hitresults generation
-    Fastest,
 }
 
 impl HitResultPriority {

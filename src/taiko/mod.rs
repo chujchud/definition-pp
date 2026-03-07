@@ -11,8 +11,8 @@ use crate::{
 pub use self::{
     attributes::{TaikoDifficultyAttributes, TaikoPerformanceAttributes},
     difficulty::gradual::TaikoGradualDifficulty,
-    performance::{TaikoPerformance, gradual::TaikoGradualPerformance},
-    score_state::TaikoScoreState,
+    performance::{InspectTaikoPerformance, TaikoPerformance, gradual::TaikoGradualPerformance},
+    score_state::{TaikoHitResults, TaikoScoreState},
     strains::TaikoStrains,
 };
 
@@ -40,6 +40,7 @@ impl IGameMode for Taiko {
     type DifficultyAttributes = TaikoDifficultyAttributes;
     type Strains = TaikoStrains;
     type Performance<'map> = TaikoPerformance<'map>;
+    type HitResults = TaikoHitResults;
     type GradualDifficulty = TaikoGradualDifficulty;
     type GradualPerformance = TaikoGradualPerformance;
 

@@ -1,7 +1,10 @@
 use rosu_map::section::general::GameMode;
 
 use crate::{
-    catch::CatchScoreState, mania::ManiaScoreState, osu::OsuScoreState, taiko::TaikoScoreState,
+    catch::{CatchHitResults, CatchScoreState},
+    mania::ManiaScoreState,
+    osu::{OsuHitResults, OsuScoreState},
+    taiko::{TaikoHitResults, TaikoScoreState},
 };
 
 /// Aggregation for a score's current state.
@@ -91,13 +94,15 @@ impl From<ScoreState> for OsuScoreState {
     fn from(state: ScoreState) -> Self {
         Self {
             max_combo: state.max_combo,
-            large_tick_hits: state.osu_large_tick_hits,
-            small_tick_hits: state.osu_small_tick_hits,
-            slider_end_hits: state.slider_end_hits,
-            n300: state.n300,
-            n100: state.n100,
-            n50: state.n50,
-            misses: state.misses,
+            hitresults: OsuHitResults {
+                large_tick_hits: state.osu_large_tick_hits,
+                small_tick_hits: state.osu_small_tick_hits,
+                slider_end_hits: state.slider_end_hits,
+                n300: state.n300,
+                n100: state.n100,
+                n50: state.n50,
+                misses: state.misses,
+            },
         }
     }
 }
@@ -106,9 +111,11 @@ impl From<ScoreState> for TaikoScoreState {
     fn from(state: ScoreState) -> Self {
         Self {
             max_combo: state.max_combo,
-            n300: state.n300,
-            n100: state.n100,
-            misses: state.misses,
+            hitresults: TaikoHitResults {
+                n300: state.n300,
+                n100: state.n100,
+                misses: state.misses,
+            },
         }
     }
 }
@@ -117,11 +124,13 @@ impl From<ScoreState> for CatchScoreState {
     fn from(state: ScoreState) -> Self {
         Self {
             max_combo: state.max_combo,
-            fruits: state.n300,
-            droplets: state.n100,
-            tiny_droplets: state.n50,
-            tiny_droplet_misses: state.n_katu,
-            misses: state.misses,
+            hitresults: CatchHitResults {
+                fruits: state.n300,
+                droplets: state.n100,
+                tiny_droplets: state.n50,
+                tiny_droplet_misses: state.n_katu,
+                misses: state.misses,
+            },
         }
     }
 }
@@ -143,15 +152,15 @@ impl From<OsuScoreState> for ScoreState {
     fn from(state: OsuScoreState) -> Self {
         Self {
             max_combo: state.max_combo,
-            osu_large_tick_hits: state.large_tick_hits,
-            osu_small_tick_hits: state.small_tick_hits,
-            slider_end_hits: state.slider_end_hits,
+            osu_large_tick_hits: state.hitresults.large_tick_hits,
+            osu_small_tick_hits: state.hitresults.small_tick_hits,
+            slider_end_hits: state.hitresults.slider_end_hits,
             n_geki: 0,
             n_katu: 0,
-            n300: state.n300,
-            n100: state.n100,
-            n50: state.n50,
-            misses: state.misses,
+            n300: state.hitresults.n300,
+            n100: state.hitresults.n100,
+            n50: state.hitresults.n50,
+            misses: state.hitresults.misses,
         }
     }
 }
@@ -165,10 +174,10 @@ impl From<TaikoScoreState> for ScoreState {
             slider_end_hits: 0,
             n_geki: 0,
             n_katu: 0,
-            n300: state.n300,
-            n100: state.n100,
+            n300: state.hitresults.n300,
+            n100: state.hitresults.n100,
             n50: 0,
-            misses: state.misses,
+            misses: state.hitresults.misses,
         }
     }
 }
@@ -181,11 +190,11 @@ impl From<CatchScoreState> for ScoreState {
             osu_small_tick_hits: 0,
             slider_end_hits: 0,
             n_geki: 0,
-            n_katu: state.tiny_droplet_misses,
-            n300: state.fruits,
-            n100: state.droplets,
-            n50: state.tiny_droplets,
-            misses: state.misses,
+            n_katu: state.hitresults.tiny_droplet_misses,
+            n300: state.hitresults.fruits,
+            n100: state.hitresults.droplets,
+            n50: state.hitresults.tiny_droplets,
+            misses: state.hitresults.misses,
         }
     }
 }

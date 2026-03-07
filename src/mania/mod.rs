@@ -11,8 +11,8 @@ use crate::{
 pub use self::{
     attributes::{ManiaDifficultyAttributes, ManiaPerformanceAttributes},
     difficulty::gradual::ManiaGradualDifficulty,
-    performance::{ManiaPerformance, gradual::ManiaGradualPerformance},
-    score_state::ManiaScoreState,
+    performance::{InspectManiaPerformance, ManiaPerformance, gradual::ManiaGradualPerformance},
+    score_state::{ManiaHitResults, ManiaScoreState},
     strains::ManiaStrains,
 };
 
@@ -40,6 +40,7 @@ impl IGameMode for Mania {
     type DifficultyAttributes = ManiaDifficultyAttributes;
     type Strains = ManiaStrains;
     type Performance<'map> = ManiaPerformance<'map>;
+    type HitResults = ManiaHitResults;
     type GradualDifficulty = ManiaGradualDifficulty;
     type GradualPerformance = ManiaGradualPerformance;
 

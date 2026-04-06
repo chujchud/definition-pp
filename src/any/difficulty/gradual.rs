@@ -39,9 +39,6 @@ use crate::{
 /// ```
 ///
 /// [`GradualPerformance`]: crate::GradualPerformance
-// 504 vs 184 bytes is an acceptable difference and the Osu variant (424 bytes)
-// is likely the most used one anyway.
-#[allow(clippy::large_enum_variant)]
 pub enum GradualDifficulty {
     Osu(OsuGradualDifficulty),
     Taiko(TaikoGradualDifficulty),
@@ -51,7 +48,7 @@ pub enum GradualDifficulty {
 
 impl GradualDifficulty {
     /// Create a [`GradualDifficulty`] for a map of any mode.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc, reason = "unreachable")]
     pub fn new(difficulty: Difficulty, map: &Beatmap) -> Self {
         Self::new_with_mode(difficulty, map, map.mode).expect("no conversion required")
     }

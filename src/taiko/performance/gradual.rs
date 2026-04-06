@@ -106,7 +106,7 @@ impl TaikoGradualPerformance {
     ///
     /// Note that the count is zero-indexed, so `n=0` will process 1 object,
     /// `n=1` will process 2, and so on.
-    #[allow(clippy::missing_panics_doc, reason = "technically false positive")]
+    #[expect(clippy::missing_panics_doc, reason = "unreachable")]
     pub fn nth(&mut self, state: TaikoScoreState, n: usize) -> Option<TaikoPerformanceAttributes> {
         let performance = self
             .difficulty
@@ -122,7 +122,7 @@ impl TaikoGradualPerformance {
     }
 
     /// Returns the amount of remaining objects.
-    #[allow(clippy::len_without_is_empty)]
+    #[expect(clippy::len_without_is_empty, reason = "TODO")]
     pub fn len(&self) -> usize {
         self.difficulty.len()
     }
@@ -162,12 +162,12 @@ mod tests {
 
             if i % 2 == 0 {
                 let next_gradual_2nd = gradual_2nd.nth(state, 1).unwrap();
-                assert_eq!(next_gradual, next_gradual_2nd);
+                assert_eq_attrs(&next_gradual, &next_gradual_2nd);
             }
 
             if i % 3 == 0 {
                 let next_gradual_3rd = gradual_3rd.nth(state, 2).unwrap();
-                assert_eq!(next_gradual, next_gradual_3rd);
+                assert_eq_attrs(&next_gradual, &next_gradual_3rd);
             }
 
             let mut regular_calc = TaikoPerformance::new(&map)
@@ -180,7 +180,28 @@ mod tests {
 
             let expected = regular_calc.calculate().unwrap();
 
-            assert_eq!(next_gradual, expected);
+            assert_eq_attrs(&next_gradual, &expected);
         }
+    }
+
+    /// Asserts equality for two [`TaikoDifficultyAttributes`] instances.
+    ///
+    /// `NaN` values are considered to be equal.
+    #[track_caller]
+    fn assert_eq_attrs(a: &TaikoPerformanceAttributes, b: &TaikoPerformanceAttributes) {
+        let TaikoPerformanceAttributes {
+            difficulty,
+            pp,
+            pp_acc,
+            pp_difficulty,
+            estimated_unstable_rate,
+        } = a;
+
+        crate::taiko::attributes::tests::assert_eq_attrs(difficulty, &b.difficulty);
+
+        assert_eq!(*pp, b.pp);
+        assert_eq!(*pp_acc, b.pp_acc);
+        assert_eq!(*pp_difficulty, b.pp_difficulty);
+        assert_eq!(*estimated_unstable_rate, b.estimated_unstable_rate);
     }
 }

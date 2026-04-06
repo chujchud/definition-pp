@@ -309,10 +309,6 @@ impl From<BeatmapState> for Beatmap {
         sorter.sort(&mut state.hit_objects);
         sorter.sort(&mut state.hit_sounds);
 
-        if state.mode == GameMode::Mania {
-            sort::osu_legacy(&mut state.hit_objects);
-        }
-
         Beatmap {
             version: state.version,
             is_convert: false,
@@ -596,7 +592,7 @@ impl DecodeBeatmap for Beatmap {
         Ok(())
     }
 
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "staying in-sync with lazer")]
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let mut split = line.trim_comment().split(',');
 

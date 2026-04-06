@@ -14,9 +14,7 @@ impl HitResultGenerator<Osu> for Fast {
             return <IgnoreAccuracy as HitResultGenerator<Osu>>::generate_hitresults(inspect);
         };
 
-        let large_tick_hits = inspect.large_tick_hits.unwrap_or(0);
-        let small_tick_hits = inspect.small_tick_hits.unwrap_or(0);
-        let slider_end_hits = inspect.slider_end_hits.unwrap_or(0);
+        let (slider_end_hits, large_tick_hits, small_tick_hits) = inspect.tick_hits();
 
         let total_hits = inspect.total_hits();
         let misses = inspect.misses();
@@ -64,7 +62,8 @@ impl HitResultGenerator<Osu> for Fast {
 
                 let denominator = f64::from(6 * total_hits) + f64::from(tick_max) / 50.0;
 
-                let target_total = f64::round((acc * denominator - numerator).max(0.0)) as u32;
+                let target_total =
+                    f64::round_ties_even((acc * denominator - numerator).max(0.0)) as u32;
 
                 // Start by assuming every non-miss is an n50
                 // delta is how much we need to increase from the baseline (all n50s)
@@ -316,8 +315,8 @@ mod tests {
             n100: None,
             n50: None,
             misses: Some(5),
-            large_tick_hits: Some(N_SLIDERS),
-            small_tick_hits: Some(N_SLIDERS + N_LARGE_TICKS),
+            large_tick_hits: Some(N_SLIDERS + N_LARGE_TICKS),
+            small_tick_hits: Some(N_SLIDERS),
             slider_end_hits: None,
             combo: None,
             hitresult_priority: HitResultPriority::BestCase,
@@ -332,8 +331,8 @@ mod tests {
             N_CIRCLES + N_SLIDERS
         );
         assert_eq!(result.misses, inspect.misses.unwrap().clone());
-        assert_eq!(result.large_tick_hits, N_SLIDERS);
-        assert_eq!(result.small_tick_hits, N_SLIDERS + N_LARGE_TICKS);
+        assert_eq!(result.large_tick_hits, N_SLIDERS + N_LARGE_TICKS);
+        assert_eq!(result.small_tick_hits, N_SLIDERS);
 
         let actual_acc = result.accuracy(origin);
         assert!(

@@ -54,7 +54,7 @@ impl<'map> Performance<'map> {
 
     /// Consume the performance calculator and calculate
     /// performance attributes for the given parameters.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc, reason = "unreachable")]
     pub fn calculate(self) -> PerformanceAttributes {
         match self {
             Self::Osu(o) => {
@@ -82,8 +82,7 @@ impl<'map> Performance<'map> {
     /// [`mode_or_ignore`] instead.
     ///
     /// [`mode_or_ignore`]: Self::mode_or_ignore
-    // Both variants have the same size
-    #[allow(clippy::result_large_err)]
+    #[expect(clippy::result_large_err, reason = "both variants have the same size")]
     pub fn try_mode(self, mode: GameMode) -> Result<Self, Self> {
         match (self, mode) {
             (Self::Osu(o), _) => o.try_mode(mode).map_err(Self::Osu),
@@ -451,8 +450,18 @@ impl<'map> Performance<'map> {
         }
     }
 
+    /// Specify the legacy total score.
+    ///
+    /// Only relevant for osu!standard.
+    pub fn legacy_total_score(self, legacy_total_score: u32) -> Self {
+        match self {
+            Self::Osu(o) => Self::Osu(o.legacy_total_score(legacy_total_score)),
+            _ => self,
+        }
+    }
+
     /// Create the [`ScoreState`] that will be used for performance calculation.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc, reason = "unreachable")]
     pub fn generate_state(&mut self) -> ScoreState {
         match self {
             Self::Osu(o) => o.generate_state().expect("no conversion required").into(),
@@ -465,7 +474,6 @@ impl<'map> Performance<'map> {
 
 /// While generating remaining hitresults, decide how they should be distributed.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
 pub enum HitResultPriority {
     /// Prioritize good hitresults over bad ones
     BestCase,

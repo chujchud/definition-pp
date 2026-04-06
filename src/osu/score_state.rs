@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::util::{float_ext::FloatExt, hint::unlikely};
 
 /// osu!standard hitresults.
@@ -65,8 +67,8 @@ impl OsuHitResults {
                 max_large_ticks,
                 max_slider_ends,
             } => {
-                let slider_end_hits = self.slider_end_hits.min(max_slider_ends);
-                let large_tick_hits = self.large_tick_hits.min(max_large_ticks);
+                let slider_end_hits = cmp::min(self.slider_end_hits, max_slider_ends);
+                let large_tick_hits = cmp::min(self.large_tick_hits, max_large_ticks);
 
                 numerator += f64::from(3 * slider_end_hits) + 0.6 * f64::from(large_tick_hits);
                 denominator += f64::from(3 * max_slider_ends) + 0.6 * f64::from(max_large_ticks);
@@ -75,8 +77,8 @@ impl OsuHitResults {
                 max_large_ticks,
                 max_small_ticks,
             } => {
-                let large_tick_hits = self.large_tick_hits.min(max_large_ticks);
-                let small_tick_hits = self.small_tick_hits.min(max_small_ticks);
+                let large_tick_hits = cmp::min(self.large_tick_hits, max_large_ticks);
+                let small_tick_hits = cmp::min(self.small_tick_hits, max_small_ticks);
 
                 numerator += 0.6 * f64::from(large_tick_hits) + 0.2 * f64::from(small_tick_hits);
                 denominator += 0.6 * f64::from(max_large_ticks) + 0.2 * f64::from(max_small_ticks);
@@ -105,6 +107,10 @@ pub struct OsuScoreState {
     pub max_combo: u32,
     /// Hitresults of a score.
     pub hitresults: OsuHitResults,
+    /// Legacy total score.
+    ///
+    /// Only relevant for osu!stable
+    pub legacy_total_score: Option<u32>,
 }
 
 impl OsuScoreState {
@@ -113,6 +119,7 @@ impl OsuScoreState {
         Self {
             max_combo: 0,
             hitresults: OsuHitResults::new(),
+            legacy_total_score: None,
         }
     }
 }

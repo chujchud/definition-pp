@@ -19,10 +19,13 @@ pub use self::{
 mod attributes;
 mod convert;
 mod difficulty;
+mod legacy_score_miss_calc;
+mod legacy_score_simulator;
 mod object;
 mod performance;
 mod score_state;
 mod strains;
+mod utils;
 
 const PLAYFIELD_BASE_SIZE: Pos = Pos::new(512.0, 384.0);
 

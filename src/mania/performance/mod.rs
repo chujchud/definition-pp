@@ -281,7 +281,7 @@ impl<'map> ManiaPerformance<'map> {
     }
 
     /// Provide parameters through an [`ManiaScoreState`].
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value, reason = "more sensible")]
     pub const fn state(mut self, state: ManiaScoreState) -> Self {
         let ManiaScoreState {
             n320,
@@ -303,7 +303,6 @@ impl<'map> ManiaPerformance<'map> {
     }
 
     /// Create the [`ManiaScoreState`] that will be used for performance calculation.
-    #[allow(clippy::too_many_lines, clippy::similar_names)]
     pub fn generate_state(&mut self) -> Result<ManiaScoreState, ConvertError> {
         self.map_or_attrs.insert_attrs(&self.difficulty)?;
 
@@ -425,6 +424,7 @@ impl<'map> TryFrom<OsuPerformance<'map>> for ManiaPerformance<'map> {
             misses,
             hitresult_priority,
             hitresult_generator: _,
+            legacy_total_score: _,
         } = osu;
 
         Ok(Self {

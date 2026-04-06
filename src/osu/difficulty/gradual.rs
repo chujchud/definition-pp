@@ -8,7 +8,9 @@ use crate::{
     model::mode::ConvertError,
     osu::{
         convert::convert_objects,
+        legacy_score_simulator::gradual::GradualLegacyScoreSimulator,
         object::{OsuObject, OsuObjectKind},
+        utils::legacy_score::GradualNestedScorePerObject,
     },
 };
 
@@ -62,6 +64,9 @@ pub struct OsuGradualDifficulty {
     // `osu_objects` will immediately invalidate `diff_objects`.
     diff_objects: Box<[OsuDifficultyObject<'static>]>,
     osu_objects: OsuObjects,
+    // Boxed to reduce the field's size
+    score_simulator: Box<GradualLegacyScoreSimulator>,
+    nested_score: GradualNestedScorePerObject,
     // Additional safety measure that this type can't be cloned as it would
     // invalidate `diff_objects`.
     _not_clonable: NotClonable,
@@ -109,8 +114,13 @@ impl OsuGradualDifficulty {
             osu_objects.iter_mut(),
         );
 
-        let skills = OsuSkills::new(mods, &scaling_factor, &map_attrs, time_preempt);
+        let great_hit_window = map_attrs.hit_windows().od_great.unwrap_or(0.0);
+
+        let skills = OsuSkills::new(mods, &scaling_factor, great_hit_window, time_preempt);
         let diff_objects = extend_lifetime(diff_objects.into_boxed_slice());
+
+        let score_simulator = GradualLegacyScoreSimulator::new(&map, map_attrs);
+        let nested_score = GradualNestedScorePerObject::default();
 
         Ok(Self {
             idx: 0,
@@ -119,6 +129,8 @@ impl OsuGradualDifficulty {
             skills,
             diff_objects,
             osu_objects,
+            score_simulator: Box::new(score_simulator),
+            nested_score,
             _not_clonable: NotClonable,
         })
     }
@@ -151,6 +163,20 @@ impl Iterator for OsuGradualDifficulty {
     type Item = OsuDifficultyAttributes;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(h) = self.osu_objects.get(self.idx) {
+            let score_attrs = self.score_simulator.simulate_next(h);
+            self.attrs.maximum_legacy_combo_score = score_attrs.combo_score as f64;
+
+            // Importantly, the `score_multipler` method is called *after*
+            // `simulate_next` so that the simulator's internal fields have
+            // been adjusted to the current object.
+            self.attrs.legacy_score_base_multiplier =
+                self.score_simulator.score_multiplier(h, false);
+
+            let slider_nested_score_per_object = self.nested_score.calculate_next(h);
+            self.attrs.nested_score_per_object = slider_nested_score_per_object;
+        }
+
         // The first difficulty object belongs to the second note since each
         // difficulty object requires the current and the last note. Hence, if
         // we're still on the first object, we don't have a difficulty object
@@ -190,11 +216,31 @@ impl Iterator for OsuGradualDifficulty {
 
         // The first note has no difficulty object
         if self.idx == 0 && take > 0 {
+            if let Some(h) = self.osu_objects.get(self.idx) {
+                let score_attrs = self.score_simulator.simulate_next(h);
+                self.attrs.maximum_legacy_combo_score = score_attrs.combo_score as f64;
+                self.attrs.legacy_score_base_multiplier =
+                    self.score_simulator.score_multiplier(h, false);
+
+                let slider_nested_score_per_object = self.nested_score.calculate_next(h);
+                self.attrs.nested_score_per_object = slider_nested_score_per_object;
+            }
+
             take -= 1;
             self.idx += 1;
         }
 
         for curr in skip_iter.take(take) {
+            if let Some(h) = self.osu_objects.get(self.idx) {
+                let score_attrs = self.score_simulator.simulate_next(h);
+                self.attrs.maximum_legacy_combo_score = score_attrs.combo_score as f64;
+                self.attrs.legacy_score_base_multiplier =
+                    self.score_simulator.score_multiplier(h, false);
+
+                let slider_nested_score_per_object = self.nested_score.calculate_next(h);
+                self.attrs.nested_score_per_object = slider_nested_score_per_object;
+            }
+
             self.skills.process(curr, &self.diff_objects);
             Self::increment_combo(curr.base, &mut self.attrs);
             self.idx += 1;
@@ -223,6 +269,10 @@ mod osu_objects {
     impl OsuObjects {
         pub(super) const fn new(objects: Box<[OsuObject]>) -> Self {
             Self { objects }
+        }
+
+        pub(super) fn get(&self, idx: usize) -> Option<&OsuObject> {
+            self.objects.get(idx)
         }
 
         pub(super) const fn is_empty(&self) -> bool {

@@ -2,9 +2,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 use rosu_mods::{
     GameMod, GameModIntermode, GameMods as GameModsLazer, GameModsIntermode, GameModsLegacy,
-    generated_mods::{
-        DifficultyAdjustCatch, DifficultyAdjustMania, DifficultyAdjustOsu, DifficultyAdjustTaiko,
-    },
+    generated_mods::DifficultyAdjustCatch,
 };
 
 /// Re-exported [`rosu_mods`].
@@ -76,16 +74,6 @@ impl GameMods {
                 .unwrap_or(1.0),
             Self::Intermode(mods) => mods.legacy_clock_rate(),
             Self::Legacy(mods) => mods.clock_rate(),
-        }
-    }
-
-    pub(crate) fn od_ar_hp_multiplier(&self) -> f64 {
-        if self.hr() {
-            1.4
-        } else if self.ez() {
-            0.5
-        } else {
-            1.0
         }
     }
 
@@ -256,39 +244,39 @@ impl GameMods {
             })
             .map(|seed| seed as i32)
     }
-}
 
-macro_rules! impl_map_attr {
-    ( $( $fn:ident: $field:ident [ $( $mode:ident ),* ] [$s:literal] ;)* ) => {
-        impl GameMods {
-            $(
-                #[doc = "Check whether the mods specify a custom "]
-                #[doc = $s]
-                #[doc = "value."]
-                pub(crate) fn $fn(&self) -> Option<f64> {
-                    match self {
-                        Self::Lazer(mods) => mods.iter().find_map(|gamemod| match gamemod {
-                            $( impl_map_attr!( @ $mode $field) => *$field, )*
-                            _ => None,
-                        }),
-                        Self::Intermode(_) | Self::Legacy(_) => None,
-                    }
-                }
-            )*
-        }
-    };
+    pub(crate) fn attraction_strength(&self) -> Option<f64> {
+        let Self::Lazer(mods) = self else { return None };
 
-    ( @ Osu $field:ident ) => { GameMod::DifficultyAdjustOsu(DifficultyAdjustOsu { $field, .. }) };
-    ( @ Taiko $field:ident ) => { GameMod::DifficultyAdjustTaiko(DifficultyAdjustTaiko { $field, .. }) };
-    ( @ Catch $field:ident ) => { GameMod::DifficultyAdjustCatch(DifficultyAdjustCatch { $field, .. }) };
-    ( @ Mania $field:ident ) => { GameMod::DifficultyAdjustMania(DifficultyAdjustMania { $field, .. }) };
-}
+        mods.iter()
+            .find_map(|m| match m {
+                GameMod::MagnetisedOsu(mg) => Some(mg.attraction_strength),
+                _ => None,
+            })
+            .flatten()
+    }
 
-impl_map_attr! {
-    ar: approach_rate [Osu, Catch] ["ar"];
-    cs: circle_size [Osu, Catch] ["cs"];
-    hp: drain_rate [Osu, Taiko, Catch, Mania] ["hp"];
-    od: overall_difficulty [Osu, Taiko, Catch, Mania] ["od"];
+    pub(crate) fn deflate_start_scale(&self) -> Option<f64> {
+        let Self::Lazer(mods) = self else { return None };
+
+        mods.iter()
+            .find_map(|m| match m {
+                GameMod::DeflateOsu(df) => Some(df.start_scale),
+                _ => None,
+            })
+            .flatten()
+    }
+
+    pub(crate) fn hd_only_fade_approach_circles(&self) -> Option<bool> {
+        let Self::Lazer(mods) = self else { return None };
+
+        mods.iter()
+            .find_map(|m| match m {
+                GameMod::HiddenOsu(hd) => Some(hd.only_fade_approach_circles),
+                _ => None,
+            })
+            .flatten()
+    }
 }
 
 macro_rules! impl_has_mod {
@@ -335,6 +323,7 @@ impl_has_mod! {
     fl: + Flashlight ["Flashlight"],
     so: + SpunOut ["SpunOut"],
     ap: + Autopilot ["Autopilot"],
+    sv2: + ScoreV2 ["ScoreV2"],
     bl: - Blinds ["Blinds"],
     cl: - Classic ["Classic"],
     invert: - Invert ["Invert"],

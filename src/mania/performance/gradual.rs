@@ -93,7 +93,7 @@ impl ManiaGradualPerformance {
     ///
     /// Note that the count is zero-indexed, so `n=0` will process 1 object,
     /// `n=1` will process 2, and so on.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc, reason = "unreachable")]
     pub fn nth(&mut self, state: ManiaScoreState, n: usize) -> Option<ManiaPerformanceAttributes> {
         let performance = self
             .difficulty
@@ -109,7 +109,7 @@ impl ManiaGradualPerformance {
     }
 
     /// Returns the amount of remaining objects.
-    #[allow(clippy::len_without_is_empty)]
+    #[expect(clippy::len_without_is_empty, reason = "TODO")]
     pub fn len(&self) -> usize {
         self.difficulty.len()
     }
@@ -125,6 +125,9 @@ mod tests {
     fn next_and_nth() {
         let map = Beatmap::from_path("./resources/1638954.osu").unwrap();
 
+        let mut cloned = map.clone();
+        cloned.mania_hitobjects_legacy_sort();
+
         let difficulty = Difficulty::new().mods(88); // HDHRDT
 
         let mut gradual = ManiaGradualPerformance::new(difficulty.clone(), &map).unwrap();
@@ -139,7 +142,7 @@ mod tests {
             state.misses += 1;
 
             // Hold notes award two hitresults in lazer
-            if let Some(h) = map.hit_objects.get(i - 1) {
+            if let Some(h) = cloned.hit_objects.get(i - 1) {
                 if !h.is_circle() {
                     state.n320 += 1;
                 }

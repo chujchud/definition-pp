@@ -281,7 +281,7 @@ impl<'map> CatchPerformance<'map> {
     }
 
     /// Provide parameters through an [`CatchScoreState`].
-    #[expect(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value, reason = "more sensible")]
     pub const fn state(mut self, state: CatchScoreState) -> Self {
         let CatchScoreState {
             max_combo,
@@ -420,6 +420,7 @@ impl<'map> TryFrom<OsuPerformance<'map>> for CatchPerformance<'map> {
             misses,
             hitresult_priority: _,
             hitresult_generator: _,
+            legacy_total_score: _,
         } = osu;
 
         Ok(Self {

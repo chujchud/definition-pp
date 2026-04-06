@@ -15,14 +15,14 @@ use crate::{
     catch::CatchPerformance,
     mania::ManiaPerformance,
     model::{mode::ConvertError, mods::GameMods},
-    osu::score_state::OsuHitResults,
+    osu::OsuHitResults,
     taiko::TaikoPerformance,
     util::map_or_attrs::MapOrAttrs,
 };
 
 use super::{
     Osu,
-    attributes::{OsuDifficultyAttributes, OsuPerformanceAttributes},
+    attributes::OsuPerformanceAttributes,
     score_state::{OsuScoreOrigin, OsuScoreState},
 };
 
@@ -46,6 +46,7 @@ pub struct OsuPerformance<'map> {
     pub(crate) n100: Option<u32>,
     pub(crate) n50: Option<u32>,
     pub(crate) misses: Option<u32>,
+    pub(crate) legacy_total_score: Option<u32>,
     pub(crate) hitresult_priority: HitResultPriority,
     pub(crate) hitresult_generator: Option<fn(InspectOsuPerformance<'_>) -> OsuHitResults>,
 }
@@ -67,6 +68,7 @@ impl PartialEq for OsuPerformance<'_> {
             misses,
             hitresult_priority,
             hitresult_generator: _,
+            legacy_total_score,
         } = self;
 
         map_or_attrs == &other.map_or_attrs
@@ -81,6 +83,7 @@ impl PartialEq for OsuPerformance<'_> {
             && n50 == &other.n50
             && misses == &other.misses
             && hitresult_priority == &other.hitresult_priority
+            && legacy_total_score == &other.legacy_total_score
     }
 }
 
@@ -99,6 +102,8 @@ impl<'map> OsuPerformance<'map> {
     /// However, when passing previously calculated attributes, make sure they
     /// have been calculated for the same map and [`Difficulty`] settings.
     /// Otherwise, the final attributes will be incorrect.
+    ///
+    /// [`OsuDifficultyAttributes`]: crate::osu::OsuDifficultyAttributes
     pub fn new(map_or_attrs: impl IntoModePerformance<'map, Osu>) -> Self {
         map_or_attrs.into_performance()
     }
@@ -131,8 +136,10 @@ impl<'map> OsuPerformance<'map> {
     /// [`mode_or_ignore`] instead.
     ///
     /// [`mode_or_ignore`]: Self::mode_or_ignore
-    // The `Ok`-variant is larger in size
-    #[allow(clippy::result_large_err)]
+    #[expect(
+        clippy::result_large_err,
+        reason = "Ok-variant is still larger in size"
+    )]
     pub fn try_mode(self, mode: GameMode) -> Result<Performance<'map>, Self> {
         match mode {
             GameMode::Osu => Ok(Performance::Osu(self)),
@@ -215,6 +222,7 @@ impl<'map> OsuPerformance<'map> {
             misses: self.misses,
             hitresult_priority: self.hitresult_priority,
             hitresult_generator: Some(H::generate_hitresults),
+            legacy_total_score: self.legacy_total_score,
         }
     }
 
@@ -386,14 +394,23 @@ impl<'map> OsuPerformance<'map> {
         self
     }
 
+    /// Specify the legacy total score.
+    pub const fn legacy_total_score(mut self, legacy_total_score: u32) -> Self {
+        self.legacy_total_score = Some(legacy_total_score);
+
+        self
+    }
+
     /// Provide parameters through an [`OsuScoreState`].
     pub const fn state(mut self, state: OsuScoreState) -> Self {
         let OsuScoreState {
             max_combo,
             hitresults,
+            legacy_total_score,
         } = state;
 
         self.combo = Some(max_combo);
+        self.legacy_total_score = legacy_total_score;
 
         self.hitresults(hitresults)
     }
@@ -431,7 +448,6 @@ impl<'map> OsuPerformance<'map> {
     }
 
     /// Create the [`OsuScoreState`] that will be used for performance calculation.
-    #[allow(clippy::too_many_lines)]
     pub fn generate_state(&mut self) -> Result<OsuScoreState, ConvertError> {
         self.map_or_attrs.insert_attrs(&self.difficulty)?;
 
@@ -494,6 +510,7 @@ impl<'map> OsuPerformance<'map> {
         Ok(OsuScoreState {
             max_combo,
             hitresults,
+            legacy_total_score: self.legacy_total_score,
         })
     }
 
@@ -510,42 +527,6 @@ impl<'map> OsuPerformance<'map> {
         let lazer = self.difficulty.get_lazer();
         let using_classic_slider_acc = mods.no_slider_head_acc(lazer);
 
-        let mut effective_miss_count = f64::from(state.hitresults.misses);
-
-        if attrs.n_sliders > 0 {
-            if using_classic_slider_acc {
-                // * Consider that full combo is maximum combo minus dropped slider tails since they don't contribute to combo but also don't break it
-                // * In classic scores we can't know the amount of dropped sliders so we estimate to 10% of all sliders on the map
-                let full_combo_threshold =
-                    f64::from(attrs.max_combo) - 0.1 * f64::from(attrs.n_sliders);
-
-                if f64::from(state.max_combo) < full_combo_threshold {
-                    effective_miss_count =
-                        full_combo_threshold / f64::from(state.max_combo).max(1.0);
-                }
-
-                // * In classic scores there can't be more misses than a sum of all non-perfect judgements
-                effective_miss_count =
-                    effective_miss_count.min(total_imperfect_hits(&state.hitresults));
-            } else {
-                let full_combo_threshold =
-                    f64::from(attrs.max_combo - n_slider_ends_dropped(&attrs, &state));
-
-                if f64::from(state.max_combo) < full_combo_threshold {
-                    effective_miss_count =
-                        full_combo_threshold / f64::from(state.max_combo).max(1.0);
-                }
-
-                // * Combine regular misses with tick misses since tick misses break combo as well
-                effective_miss_count = effective_miss_count.min(f64::from(
-                    n_large_tick_miss(&attrs, &state) + state.hitresults.misses,
-                ));
-            }
-        }
-
-        effective_miss_count = effective_miss_count.max(f64::from(state.hitresults.misses));
-        effective_miss_count = effective_miss_count.min(f64::from(state.hitresults.total_hits()));
-
         let origin = match (lazer, using_classic_slider_acc) {
             (false, _) => OsuScoreOrigin::Stable,
             (true, false) => OsuScoreOrigin::WithSliderAcc {
@@ -560,14 +541,8 @@ impl<'map> OsuPerformance<'map> {
 
         let acc = state.hitresults.accuracy(origin);
 
-        let inner = OsuPerformanceCalculator::new(
-            attrs,
-            mods,
-            acc,
-            state,
-            effective_miss_count,
-            using_classic_slider_acc,
-        );
+        let inner =
+            OsuPerformanceCalculator::new(attrs, mods, acc, state, using_classic_slider_acc);
 
         Ok(inner.calculate())
     }
@@ -587,10 +562,14 @@ impl<'map> OsuPerformance<'map> {
             misses: None,
             hitresult_priority: HitResultPriority::DEFAULT,
             hitresult_generator: None,
+            legacy_total_score: None,
         }
     }
 
-    #[allow(clippy::result_large_err)]
+    #[expect(
+        clippy::result_large_err,
+        reason = "Result type serves more as 'Either'"
+    )]
     pub(crate) fn try_convert_map(
         map_or_attrs: MapOrAttrs<'map, Osu>,
         mode: GameMode,
@@ -622,18 +601,6 @@ impl<'map, T: IntoModePerformance<'map, Osu>> From<T> for OsuPerformance<'map> {
     }
 }
 
-fn total_imperfect_hits(hitresults: &OsuHitResults) -> f64 {
-    f64::from(hitresults.n100 + hitresults.n50 + hitresults.misses)
-}
-
-const fn n_slider_ends_dropped(attrs: &OsuDifficultyAttributes, state: &OsuScoreState) -> u32 {
-    attrs.n_sliders - state.hitresults.slider_end_hits
-}
-
-const fn n_large_tick_miss(attrs: &OsuDifficultyAttributes, state: &OsuScoreState) -> u32 {
-    attrs.n_large_ticks - state.hitresults.large_tick_hits
-}
-
 #[cfg(test)]
 mod test {
     use std::sync::OnceLock;
@@ -641,6 +608,7 @@ mod test {
     use crate::{
         Beatmap,
         any::{DifficultyAttributes, PerformanceAttributes},
+        osu::OsuDifficultyAttributes,
         taiko::{TaikoDifficultyAttributes, TaikoPerformanceAttributes},
     };
 

@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::cmp::{self, Ordering};
 
 use rosu_map::{section::general::GameMode, util::Pos};
 
@@ -13,7 +13,6 @@ use crate::{
     util::{
         limited_queue::LimitedQueue,
         random::{csharp::Random as CsharpRandom, osu::Random as OsuRandom},
-        sort,
     },
 };
 
@@ -143,7 +142,6 @@ pub fn convert(map: &mut Beatmap, mods: &GameMods) {
     map.hit_sounds.clear();
     map.hit_objects = new_hit_objects;
     map.hit_objects.sort_by(cmp_by_start_time);
-    sort::osu_legacy(&mut map.hit_objects);
 
     map.mode = GameMode::Mania;
     map.is_convert = true;
@@ -197,9 +195,9 @@ fn target_columns(map: &Beatmap, mods: &GameMods) -> f32 {
         }
     }
 
-    #[allow(clippy::manual_clamp, reason = "keeping it in-sync with lazer")]
+    #[expect(clippy::manual_clamp, reason = "staying in-sync with lazer")]
     {
-        ((rounded_od as i32) + 1).min(7).max(4) as f32
+        cmp::max(cmp::min((rounded_od as i32) + 1, 7), 4) as f32
     }
 }
 

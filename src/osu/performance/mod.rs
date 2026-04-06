@@ -336,60 +336,60 @@ impl<'map> OsuPerformance<'map> {
 
     /// Override a beatmap's set AR.
     ///
-    /// `with_mods` determines if the given value should be used before
+    /// `fixed` determines if the given value should be used before
     /// or after accounting for mods, e.g. on `true` the value will be
     /// used as is and on `false` it will be modified based on the mods.
     ///
     /// | Minimum | Maximum |
     /// | :-----: | :-----: |
     /// | -20     | 20      |
-    pub fn ar(mut self, ar: f32, with_mods: bool) -> Self {
-        self.difficulty = self.difficulty.ar(ar, with_mods);
+    pub fn ar(mut self, ar: f32, fixed: bool) -> Self {
+        self.difficulty = self.difficulty.ar(ar, fixed);
 
         self
     }
 
     /// Override a beatmap's set CS.
     ///
-    /// `with_mods` determines if the given value should be used before
+    /// `fixed` determines if the given value should be used before
     /// or after accounting for mods, e.g. on `true` the value will be
     /// used as is and on `false` it will be modified based on the mods.
     ///
     /// | Minimum | Maximum |
     /// | :-----: | :-----: |
     /// | -20     | 20      |
-    pub fn cs(mut self, cs: f32, with_mods: bool) -> Self {
-        self.difficulty = self.difficulty.cs(cs, with_mods);
+    pub fn cs(mut self, cs: f32, fixed: bool) -> Self {
+        self.difficulty = self.difficulty.cs(cs, fixed);
 
         self
     }
 
     /// Override a beatmap's set HP.
     ///
-    /// `with_mods` determines if the given value should be used before
+    /// `fixed` determines if the given value should be used before
     /// or after accounting for mods, e.g. on `true` the value will be
     /// used as is and on `false` it will be modified based on the mods.
     ///
     /// | Minimum | Maximum |
     /// | :-----: | :-----: |
     /// | -20     | 20      |
-    pub fn hp(mut self, hp: f32, with_mods: bool) -> Self {
-        self.difficulty = self.difficulty.hp(hp, with_mods);
+    pub fn hp(mut self, hp: f32, fixed: bool) -> Self {
+        self.difficulty = self.difficulty.hp(hp, fixed);
 
         self
     }
 
     /// Override a beatmap's set OD.
     ///
-    /// `with_mods` determines if the given value should be used before
+    /// `fixed` determines if the given value should be used before
     /// or after accounting for mods, e.g. on `true` the value will be
     /// used as is and on `false` it will be modified based on the mods.
     ///
     /// | Minimum | Maximum |
     /// | :-----: | :-----: |
     /// | -20     | 20      |
-    pub fn od(mut self, od: f32, with_mods: bool) -> Self {
-        self.difficulty = self.difficulty.od(od, with_mods);
+    pub fn od(mut self, od: f32, fixed: bool) -> Self {
+        self.difficulty = self.difficulty.od(od, fixed);
 
         self
     }

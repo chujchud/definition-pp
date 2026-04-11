@@ -5,10 +5,10 @@
 //! while also providing a significant [boost in performance](#speed).
 //!
 //! Last commits of the ported code:
-//!   - [osu!lazer] : `79b737bc270c8361261a9edd43b380f5326c3848` (2025-02-27)
-//!   - [osu!tools] : `152c5d90f73f4d7eabcf4047ecb939c1b621db85` (2025-02-28)
+//!   - [osu!lazer] : `28c846b4d9366484792e27f4729cd1afa2cdeb66` (2025-10-13)
+//!   - [osu!tools] : `ab97b64f60901952926b2121ddffb8976d7f8775` (2025-10-16)
 //!
-//! News posts of the latest updates: <https://osu.ppy.sh/home/news/2025-03-06-performance-points-star-rating-updates>
+//! News posts of the latest updates: <https://osu.ppy.sh/home/news/2025-10-29-performance-points-star-rating-updates>
 //!
 //! ## Usage
 //!
@@ -19,6 +19,8 @@
 //! // Whereas osu! simply times out on malicious maps, rosu-pp does not. To
 //! // prevent potential performance/memory issues, it is recommended to check
 //! // beforehand whether a map is too suspicious for further calculation.
+//! // Alternatively, using e.g. `checked_calculate` instead of `calculate`
+//! // performs the same suspicion check before calculating.
 //! if let Err(sus) = map.check_suspicion() {
 //!     panic!("{sus:?}");
 //! }
@@ -26,7 +28,7 @@
 //! // Calculate difficulty attributes
 //! let diff_attrs = rosu_pp::Difficulty::new()
 //!     .mods(8 + 16) // HDHR
-//!     .calculate(&map);
+//!     .calculate(&map); // or `checked_calculate`
 //!
 //! let stars = diff_attrs.stars();
 //!

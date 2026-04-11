@@ -1,8 +1,8 @@
-use rosu_map::section::general::GameMode;
-
 use crate::{
-    Beatmap, Difficulty, any::difficulty::skills::StrainSkill, model::mode::ConvertError,
-    taiko::difficulty::DifficultyValues,
+    Beatmap, Difficulty,
+    any::difficulty::skills::StrainSkill,
+    model::mode::ConvertError,
+    taiko::{convert::prepare_map, difficulty::DifficultyValues},
 };
 
 use super::difficulty::TaikoSkills;
@@ -30,7 +30,7 @@ impl TaikoStrains {
 }
 
 pub fn strains(difficulty: &Difficulty, map: &Beatmap) -> Result<TaikoStrains, ConvertError> {
-    let map = map.convert_ref(GameMode::Taiko, difficulty.get_mods())?;
+    let map = prepare_map(difficulty, map)?;
 
     let great_hit_window = map
         .attributes()

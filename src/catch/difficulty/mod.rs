@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use rosu_map::section::general::GameMode;
 
 use crate::{
@@ -9,7 +7,9 @@ use crate::{
         difficulty::{Difficulty, skills::StrainSkill},
     },
     catch::{
-        catcher::Catcher, convert::convert_objects, difficulty::object::CatchDifficultyObject,
+        catcher::Catcher,
+        convert::{convert_objects, prepare_map},
+        difficulty::object::CatchDifficultyObject,
     },
     model::{beatmap::BeatmapAttributes, mode::ConvertError},
 };
@@ -45,13 +45,6 @@ pub fn checked_difficulty(
     map.check_suspicion()?;
 
     Ok(calculate_difficulty(difficulty, &map))
-}
-
-fn prepare_map<'map>(
-    difficulty: &Difficulty,
-    map: &'map Beatmap,
-) -> Result<Cow<'map, Beatmap>, ConvertError> {
-    map.convert_ref(GameMode::Catch, difficulty.get_mods())
 }
 
 fn calculate_difficulty(difficulty: &Difficulty, map: &Beatmap) -> CatchDifficultyAttributes {

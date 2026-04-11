@@ -316,6 +316,16 @@ impl Difficulty {
         }
     }
 
+    /// Perform the strain calculation after verifying the map is not
+    /// suspicious.
+    ///
+    /// See [`Difficulty::strains`].
+    pub fn checked_strains(&self, map: &Beatmap) -> Result<Strains, TooSuspicious> {
+        map.check_suspicion()?;
+
+        Ok(self.strains(map))
+    }
+
     /// Perform the strain calculation for a specific [`IGameMode`].
     pub fn strains_for_mode<M: IGameMode>(
         &self,
@@ -329,6 +339,15 @@ impl Difficulty {
         GradualDifficulty::new(self, map)
     }
 
+    /// Same as [`Difficulty::gradual_difficulty`] but verifies that the map is
+    /// not suspicious.
+    pub fn checked_gradual_difficulty(
+        self,
+        map: &Beatmap,
+    ) -> Result<GradualDifficulty, TooSuspicious> {
+        GradualDifficulty::checked_new(self, map)
+    }
+
     /// Create a gradual difficulty calculator for a [`Beatmap`] on a specific [`IGameMode`].
     pub fn gradual_difficulty_for_mode<M: IGameMode>(
         self,
@@ -340,6 +359,15 @@ impl Difficulty {
     /// Create a gradual performance calculator for a [`Beatmap`].
     pub fn gradual_performance(self, map: &Beatmap) -> GradualPerformance {
         GradualPerformance::new(self, map)
+    }
+
+    /// Same as [`Difficulty::gradual_performance`] but verifies that the map is
+    /// not suspicious.
+    pub fn checked_gradual_performance(
+        self,
+        map: &Beatmap,
+    ) -> Result<GradualPerformance, TooSuspicious> {
+        GradualPerformance::checked_new(self, map)
     }
 
     /// Create a gradual performance calculator for a [`Beatmap`] on a specific [`IGameMode`].

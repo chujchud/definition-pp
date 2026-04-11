@@ -1,9 +1,7 @@
-use rosu_map::section::general::GameMode;
-
 use crate::{
     Beatmap,
     any::{Difficulty, difficulty::skills::StrainSkill},
-    mania::difficulty::DifficultyValues,
+    mania::{convert::prepare_map, difficulty::DifficultyValues},
     model::mode::ConvertError,
 };
 
@@ -22,7 +20,7 @@ impl ManiaStrains {
 }
 
 pub fn strains(difficulty: &Difficulty, map: &Beatmap) -> Result<ManiaStrains, ConvertError> {
-    let map = map.convert_ref(GameMode::Mania, difficulty.get_mods())?;
+    let map = prepare_map(difficulty, map)?;
     let values = DifficultyValues::calculate(difficulty, &map);
 
     Ok(ManiaStrains {

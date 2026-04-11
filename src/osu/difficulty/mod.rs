@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp, pin::Pin};
+use std::{cmp, pin::Pin};
 
 use rosu_map::section::general::GameMode;
 use skills::{aim::Aim, flashlight::Flashlight, speed::Speed, strain::OsuStrainSkill};
@@ -11,7 +11,7 @@ use crate::{
     },
     model::{beatmap::BeatmapAttributes, mode::ConvertError, mods::GameMods},
     osu::{
-        convert::convert_objects,
+        convert::{convert_objects, prepare_map},
         difficulty::{
             object::OsuDifficultyObject, rating::OsuRatingCalculator,
             scaling_factor::ScalingFactor, skills::strain::count_top_weighted_sliders,
@@ -56,13 +56,6 @@ pub fn checked_difficulty(
     map.check_suspicion()?;
 
     Ok(calculate_difficulty(difficulty, &map))
-}
-
-fn prepare_map<'map>(
-    difficulty: &Difficulty,
-    map: &'map Beatmap,
-) -> Result<Cow<'map, Beatmap>, ConvertError> {
-    map.convert_ref(GameMode::Osu, difficulty.get_mods())
 }
 
 fn calculate_difficulty(difficulty: &Difficulty, map: &Beatmap) -> OsuDifficultyAttributes {

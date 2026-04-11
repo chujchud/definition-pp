@@ -1,14 +1,18 @@
-use std::cmp::{self, Ordering};
+use std::{
+    borrow::Cow,
+    cmp::{self, Ordering},
+};
 
 use rosu_map::{section::general::GameMode, util::Pos};
 
 use crate::{
-    GameMods,
+    Difficulty, GameMods,
     mania::object::ManiaObject,
     model::{
         beatmap::Beatmap,
         control_point::TimingPoint,
         hit_object::{HitObject, HitObjectKind, HoldNote, Spinner},
+        mode::ConvertError,
     },
     util::{
         limited_queue::LimitedQueue,
@@ -30,6 +34,30 @@ mod pattern_generator;
 mod pattern_type;
 
 const MAX_NOTES_FOR_DENSITY: usize = 7;
+
+pub fn prepare_map<'map>(
+    difficulty: &Difficulty,
+    map: &'map Beatmap,
+) -> Result<Cow<'map, Beatmap>, ConvertError> {
+    let mut map = map.convert_ref(GameMode::Mania, difficulty.get_mods())?;
+
+    if difficulty.get_mods().ho() {
+        apply_hold_off_to_beatmap(map.to_mut());
+    }
+
+    if difficulty.get_mods().invert() {
+        apply_invert_to_beatmap(map.to_mut());
+    }
+
+    if let Some(seed) = difficulty.get_mods().random_seed() {
+        apply_random_to_beatmap(map.to_mut(), seed);
+    }
+
+    let map_mut = map.to_mut();
+    map_mut.mania_hitobjects_legacy_sort();
+
+    Ok(map)
+}
 
 pub fn convert(map: &mut Beatmap, mods: &GameMods) {
     let seed = (map.hp + map.cs).round_ties_even() as i32 * 20
@@ -201,7 +229,7 @@ fn target_columns(map: &Beatmap, mods: &GameMods) -> f32 {
     }
 }
 
-pub(super) fn apply_hold_off_to_beatmap(map: &mut Beatmap) {
+fn apply_hold_off_to_beatmap(map: &mut Beatmap) {
     let new_hit_objects_iter = map.hit_objects.iter().filter_map(|h| {
         if h.is_hold_note() {
             Some(HitObject {
@@ -233,7 +261,7 @@ pub(super) fn apply_hold_off_to_beatmap(map: &mut Beatmap) {
     map.hit_objects.sort_by(cmp_by_start_time);
 }
 
-pub(super) fn apply_invert_to_beatmap(map: &mut Beatmap) {
+fn apply_invert_to_beatmap(map: &mut Beatmap) {
     let mut new_objects = Vec::with_capacity(map.hit_objects.len());
     let mut column_buf = Vec::new();
     let mut locations = Vec::new();
@@ -299,7 +327,7 @@ pub(super) fn apply_invert_to_beatmap(map: &mut Beatmap) {
     map.breaks.clear();
 }
 
-pub(super) fn apply_random_to_beatmap(map: &mut Beatmap, seed: i32) {
+fn apply_random_to_beatmap(map: &mut Beatmap, seed: i32) {
     let mut rng = CsharpRandom::new(seed);
 
     let total_columns = map.cs;

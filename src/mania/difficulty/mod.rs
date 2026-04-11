@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp};
+use std::cmp;
 
 use rosu_map::section::general::GameMode;
 
@@ -9,6 +9,7 @@ use crate::{
         difficulty::{Difficulty, skills::StrainSkill},
     },
     mania::{
+        convert::prepare_map,
         difficulty::{object::ManiaDifficultyObject, skills::strain::Strain},
         object::{ManiaObject, ObjectParams},
     },
@@ -16,7 +17,7 @@ use crate::{
     util::sync::RefCount,
 };
 
-use super::{attributes::ManiaDifficultyAttributes, convert};
+use super::attributes::ManiaDifficultyAttributes;
 
 mod evaluators;
 pub mod gradual;
@@ -42,30 +43,6 @@ pub fn checked_difficulty(
     map.check_suspicion()?;
 
     Ok(calculate_difficulty(difficulty, &map))
-}
-
-fn prepare_map<'map>(
-    difficulty: &Difficulty,
-    map: &'map Beatmap,
-) -> Result<Cow<'map, Beatmap>, ConvertError> {
-    let mut map = map.convert_ref(GameMode::Mania, difficulty.get_mods())?;
-
-    if difficulty.get_mods().ho() {
-        convert::apply_hold_off_to_beatmap(map.to_mut());
-    }
-
-    if difficulty.get_mods().invert() {
-        convert::apply_invert_to_beatmap(map.to_mut());
-    }
-
-    if let Some(seed) = difficulty.get_mods().random_seed() {
-        convert::apply_random_to_beatmap(map.to_mut(), seed);
-    }
-
-    let map_mut = map.to_mut();
-    map_mut.mania_hitobjects_legacy_sort();
-
-    Ok(map)
 }
 
 fn calculate_difficulty(difficulty: &Difficulty, map: &Beatmap) -> ManiaDifficultyAttributes {

@@ -1,12 +1,24 @@
-use rosu_map::section::hit_objects::CurveBuffers;
+use std::borrow::Cow;
 
-use crate::model::{beatmap::Beatmap, mods::Reflection};
+use rosu_map::section::{general::GameMode, hit_objects::CurveBuffers};
+
+use crate::{
+    Difficulty,
+    model::{beatmap::Beatmap, mode::ConvertError, mods::Reflection},
+};
 
 use super::{
     attributes::OsuDifficultyAttributes,
     difficulty::scaling_factor::ScalingFactor,
     object::{NestedSliderObjectKind, OsuObject, OsuObjectKind},
 };
+
+pub fn prepare_map<'map>(
+    difficulty: &Difficulty,
+    map: &'map Beatmap,
+) -> Result<Cow<'map, Beatmap>, ConvertError> {
+    map.convert_ref(GameMode::Osu, difficulty.get_mods())
+}
 
 pub fn convert_objects(
     map: &Beatmap,

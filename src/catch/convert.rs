@@ -1,9 +1,13 @@
+use std::borrow::Cow;
+
 use rosu_map::section::{general::GameMode, hit_objects::CurveBuffers};
 
 use crate::{
+    Difficulty,
     model::{
         beatmap::Beatmap,
         hit_object::{HitObject, HitObjectKind, HoldNote, Spinner},
+        mode::ConvertError,
         mods::Reflection,
     },
     util::{float_ext::FloatExt, random::osu::Random},
@@ -22,6 +26,13 @@ use super::{
 };
 
 const RNG_SEED: i32 = 1337;
+
+pub fn prepare_map<'map>(
+    difficulty: &Difficulty,
+    map: &'map Beatmap,
+) -> Result<Cow<'map, Beatmap>, ConvertError> {
+    map.convert_ref(GameMode::Catch, difficulty.get_mods())
+}
 
 pub const fn convert(map: &mut Beatmap) {
     map.mode = GameMode::Catch;

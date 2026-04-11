@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp};
+use std::cmp;
 
 use rhythm::preprocessor::RhythmDifficultyPreprocessor;
 use rosu_map::section::general::GameMode;
@@ -9,6 +9,7 @@ use crate::{
     any::{CalculateError, difficulty::skills::StrainSkill},
     model::mode::ConvertError,
     taiko::{
+        convert::prepare_map,
         difficulty::{
             color::preprocessor::ColorDifficultyPreprocessor,
             object::{TaikoDifficultyObject, TaikoDifficultyObjects},
@@ -23,7 +24,7 @@ use crate::{
 
 pub(crate) use self::skills::TaikoSkills;
 
-use super::{attributes::TaikoDifficultyAttributes, convert};
+use super::attributes::TaikoDifficultyAttributes;
 
 mod color;
 mod evaluators;
@@ -57,19 +58,6 @@ pub fn checked_difficulty(
     map.check_suspicion()?;
 
     Ok(calculate_difficulty(difficulty, &map))
-}
-
-fn prepare_map<'map>(
-    difficulty: &Difficulty,
-    map: &'map Beatmap,
-) -> Result<Cow<'map, Beatmap>, ConvertError> {
-    let mut map = map.convert_ref(GameMode::Taiko, difficulty.get_mods())?;
-
-    if let Some(seed) = difficulty.get_mods().random_seed() {
-        convert::apply_random_to_beatmap(map.to_mut(), seed);
-    }
-
-    Ok(map)
 }
 
 fn calculate_difficulty(difficulty: &Difficulty, map: &Beatmap) -> TaikoDifficultyAttributes {

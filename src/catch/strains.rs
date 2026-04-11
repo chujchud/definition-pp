@@ -1,9 +1,7 @@
-use rosu_map::section::general::GameMode;
-
 use crate::{
     Beatmap,
     any::{Difficulty, difficulty::skills::StrainSkill},
-    catch::difficulty::DifficultyValues,
+    catch::{convert::prepare_map, difficulty::DifficultyValues},
     model::mode::ConvertError,
 };
 
@@ -22,7 +20,7 @@ impl CatchStrains {
 }
 
 pub fn strains(difficulty: &Difficulty, map: &Beatmap) -> Result<CatchStrains, ConvertError> {
-    let map = map.convert_ref(GameMode::Catch, difficulty.get_mods())?;
+    let map = prepare_map(difficulty, map)?;
     let DifficultyValues { movement, .. } = DifficultyValues::calculate(difficulty, &map);
 
     Ok(CatchStrains {

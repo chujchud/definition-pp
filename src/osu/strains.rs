@@ -1,6 +1,7 @@
-use rosu_map::section::general::GameMode;
-
-use crate::{Beatmap, Difficulty, any::difficulty::skills::StrainSkill, model::mode::ConvertError};
+use crate::{
+    Beatmap, Difficulty, any::difficulty::skills::StrainSkill, model::mode::ConvertError,
+    osu::convert::prepare_map,
+};
 
 use super::difficulty::{DifficultyValues, skills::OsuSkills};
 
@@ -25,7 +26,7 @@ impl OsuStrains {
 }
 
 pub fn strains(difficulty: &Difficulty, map: &Beatmap) -> Result<OsuStrains, ConvertError> {
-    let map = map.convert_ref(GameMode::Osu, difficulty.get_mods())?;
+    let map = prepare_map(difficulty, map)?;
 
     let DifficultyValues {
         osu_objects: _,

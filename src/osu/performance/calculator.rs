@@ -17,7 +17,7 @@ use crate::{
 };
 
 // * This is being adjusted to keep the final pp value scaled around what it used to be when changing things.
-pub const PERFORMANCE_BASE_MULTIPLIER: f64 = 1.14;
+pub const PERFORMANCE_BASE_MULTIPLIER: f64 = 1.55;
 
 pub(super) struct OsuPerformanceCalculator<'mods> {
     attrs: OsuDifficultyAttributes,
@@ -83,10 +83,6 @@ impl OsuPerformanceCalculator<'_> {
 
         let mut multiplier = PERFORMANCE_BASE_MULTIPLIER;
 
-        if self.mods.nf() {
-            multiplier *= (1.0 - 0.02 * effective_miss_count).max(0.9);
-        }
-
         if self.mods.so() && total_hits > 0.0 {
             multiplier *= 1.0 - (f64::from(self.attrs.n_spinners) / total_hits).powf(0.85);
         }
@@ -99,8 +95,8 @@ impl OsuPerformanceCalculator<'_> {
             // * this is well beyond currently maximum achievable OD which is 12.17 (DTx2 + DA with OD11)
             let (n100_mult, n50_mult) = if od > 0.0 {
                 (
-                    0.75 * (1.0 - od / 13.33).max(0.0),
-                    (1.0 - (od / 13.33).powf(5.0)).max(0.0),
+                    0.48 * (1.0 - od / 13.33).max(0.0),
+                    (1.0 - (od / 13.33).powf(3.2)).max(0.0),
                 )
             } else {
                 (1.0, 1.0)
@@ -129,10 +125,15 @@ impl OsuPerformanceCalculator<'_> {
         let acc_value = self.compute_accuracy_value();
         let flashlight_value = self.compute_flashlight_value(effective_miss_count);
 
+        let ar_baseline = 10.6;
+        let bonus = ((ar_baseline - self.attrs.ar()).max(0.0))
+            .powf(0.6)
+            .max(1.0);
+
         let pp = (aim_value.powf(1.1)
             + speed_value.powf(1.1)
             + acc_value.powf(1.1)
-            + flashlight_value.powf(1.1))
+            + flashlight_value.powf(1.135))
         .powf(1.0 / 1.1)
             * multiplier;
 
@@ -202,11 +203,11 @@ impl OsuPerformanceCalculator<'_> {
 
         let total_hits = self.total_hits();
 
-        let len_bonus = 0.95
+        let len_bonus = 0.55
             + 0.4 * (total_hits / 2000.0).min(1.0)
             + f64::from(u8::from(total_hits > 2000.0)) * (total_hits / 2000.0).log10() * 0.5;
 
-        aim_value *= len_bonus;
+        aim_value *= len_bonus.max(1.0);
 
         if effective_miss_count > 0.0 {
             *aim_estimated_slider_breaks = self.calculate_estimated_slider_breaks(
@@ -619,7 +620,7 @@ impl OsuPerformanceCalculator<'_> {
     // * so we use the amount of relatively difficult sections to adjust miss penalty
     // * to make it more punishing on maps with lower amount of hard sections.
     fn calculate_miss_penalty(miss_count: f64, diff_strain_count: f64) -> f64 {
-        0.96 / ((miss_count / (4.0 * diff_strain_count.ln().powf(0.94))) + 1.0)
+        0.80 / ((miss_count / (4.0 * diff_strain_count.ln().powf(0.94))) + 1.0)
     }
 
     fn get_combo_scaling_factor(&self) -> f64 {
